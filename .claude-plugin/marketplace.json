@@ -1,0 +1,21 @@
+{
+  "name": "plannames",
+  "owner": {
+    "name": "Mihai Joldis",
+    "url": "https://github.com/mihaijoldis"
+  },
+  "metadata": {
+    "description": "The plan-names plugin for Claude Code.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "plan-names",
+      "source": "./plugins/plan-names",
+      "description": "Submits the generated filename of each new plan file to plannames.dev, where names are ranked for fun. Filenames only, never contents.",
+      "homepage": "https://plannames.dev",
+      "license": "MIT",
+      "category": "fun"
+    }
+  ]
+}

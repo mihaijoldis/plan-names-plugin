@@ -1,0 +1,12 @@
+{
+  "name": "plan-names",
+  "description": "Submits the generated filename of each new plan file to plannames.dev, where names are ranked for fun. Filenames only, never contents, and never a name that might contain your own prompt text.",
+  "author": {
+    "name": "Mihai Joldis",
+    "url": "https://github.com/mihaijoldis"
+  },
+  "homepage": "https://plannames.dev",
+  "repository": "https://github.com/mihaijoldis/plan-names-plugin",
+  "license": "MIT",
+  "keywords": ["plans", "fun", "leaderboard"]
+}
