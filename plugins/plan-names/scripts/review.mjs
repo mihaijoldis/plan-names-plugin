@@ -4,9 +4,10 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { request } from 'node:https';
+import { resolveDataDir } from './data-dir.mjs';
 
-const dataDir = process.env.CLAUDE_PLUGIN_DATA || join(homedir(), '.plannames');
+const dataDir = resolveDataDir();
+const baseUrl = (process.env.PLANNAMES_BASE_URL || 'https://plannames.dev').replace(/\/$/, '');
 const NETWORK_TIMEOUT = 3000;
 
 function ensureDataDir() {
@@ -47,45 +48,31 @@ function getOrCreateInstallId() {
 }
 
 async function submitIngest(name, tokens, installId) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      name,
-      agent: 'claude-code',
-      agentVersion: null,
-      installId,
-      clientVersion: '1.0.0'
-    });
-
-    const options = {
-      hostname: 'plannames.dev',
-      path: '/v1/ingest',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body)
-      }
-    };
-
-    const req = request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (err) {
-          reject(new Error(`Invalid response from server: ${err.message}`));
-        }
-      });
-    });
-
-    req.on('error', (err) => reject(new Error(`Network error: ${err.message}`)));
-    req.setTimeout(NETWORK_TIMEOUT, () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
-    req.write(body);
-    req.end();
+  const body = JSON.stringify({
+    name,
+    agent: 'claude-code',
+    agentVersion: null,
+    installId,
+    clientVersion: '1.0.0'
   });
+
+  let res;
+  try {
+    res = await fetch(`${baseUrl}/v1/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Connection': 'close' },
+      body,
+      signal: AbortSignal.timeout(NETWORK_TIMEOUT)
+    });
+  } catch (err) {
+    throw new Error(`Network error: ${err.message}`);
+  }
+
+  try {
+    return await res.json();
+  } catch (err) {
+    throw new Error(`Invalid response from server: ${err.message}`);
+  }
 }
 
 async function handleList() {
@@ -188,7 +175,9 @@ async function main() {
     }
   } catch (err) {
     console.error(`Error: ${err.message}`);
-    process.exit(1);
+    // Set the code rather than forcing exit: --submit fails after a request, and tearing down
+    // mid-teardown trips the same libuv assertion that used to crash the hook.
+    process.exitCode = 1;
   }
 }
 

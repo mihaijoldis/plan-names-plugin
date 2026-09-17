@@ -1,0 +1,4 @@
+# Transient state written by the sink and test fixtures, not checked in.
+requests.json
+vocab-extra
+health-fail
