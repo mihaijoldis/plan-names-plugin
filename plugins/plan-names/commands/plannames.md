@@ -1,3 +1,7 @@
+---
+description: Review plan filenames plan-names held back because they may contain your own prompt text, and choose which to submit or discard.
+---
+
 # /plannames
 
 Review plan names held back by the vocabulary gate.
