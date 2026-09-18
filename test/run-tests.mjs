@@ -25,6 +25,26 @@ function run({ filePath, base = 'http://127.0.0.1:4599', dataDir, stdin, extraEn
   return { out: out.trim(), reqs, dir, pending: read('pending.json'), seen: read('seen.json'), stats: read('stats.json') };
 }
 
+
+const REVIEW = join(HERE, '..', 'plugins', 'plan-names', 'scripts', 'review.mjs');
+
+function runReview(args, { base = 'http://127.0.0.1:4599', dataDir } = {}) {
+  writeFileSync(LOG, '[]');
+  const dir = dataDir || mkdtempSync(join(tmpdir(), 'pn-'));
+  let out = '', code = 0;
+  try {
+    out = execFileSync(process.execPath, [REVIEW, ...args], {
+      env: { ...process.env, CLAUDE_PLUGIN_DATA: dir, PLANNAMES_BASE_URL: base },
+      encoding: 'utf8'
+    });
+  } catch (err) {
+    out = (err.stdout || '') + (err.stderr || '');
+    code = err.status;
+  }
+  const reqs = JSON.parse(readFileSync(LOG, 'utf8'));
+  return { out: out.trim(), reqs, dir, code };
+}
+
 let pass = 0, fail = 0;
 function check(label, cond, detail) {
   if (cond) { pass++; console.log(`  PASS  ${label}`); }
@@ -193,6 +213,40 @@ console.log('14. PRIVACY: a still-unknown held name is never auto-submitted');
   const submitted = r.reqs.filter(q => q.url === '/v1/ingest').map(q => JSON.parse(q.body).name);
   check('prompt-text name NOT submitted', !submitted.includes('please-help-me-vivid-otter'), JSON.stringify(submitted));
   check('still held', r.pending?.some(e => e.name === 'please-help-me-vivid-otter'), JSON.stringify(r.pending));
+}
+
+console.log('');
+console.log('15. --claim asks for a code and prints it');
+{
+  const r = runReview(['--claim']);
+  const claim = r.reqs.find(q => q.url === '/v1/claim-code');
+  check('posted to /v1/claim-code', !!claim, JSON.stringify(r.reqs));
+  check('body carries installId only', claim && Object.keys(JSON.parse(claim.body)).join(',') === 'installId', claim?.body);
+  check('code printed', r.out.includes('K7M2-QX41'), r.out);
+  check('claim URL printed', r.out.includes('/claim'), r.out);
+  check('exited clean', r.code === 0, String(r.code));
+}
+
+console.log('');
+console.log('16. PRIVACY: --claim transmits no address, no name, no path');
+{
+  const r = runReview(['--claim']);
+  const payload = JSON.stringify(r.reqs);
+  // An email address cannot have been sent by a client that never asked for one, but the
+  // whole point of the code flow is that this stays true as the command grows.
+  check('no @ anywhere in traffic', !payload.includes('@'), payload);
+  check('no name field', !payload.includes('"name"'), payload);
+  check('no plans path', !payload.includes('.claude'), payload);
+  check('exactly one request', r.reqs.length === 1, String(r.reqs.length));
+}
+
+console.log('');
+console.log('17. an unknown flag still fails with usage');
+{
+  const r = runReview(['--subscribe']);
+  check('non-zero exit', r.code !== 0, String(r.code));
+  check('usage mentions --claim', r.out.includes('--claim'), r.out);
+  check('nothing sent', r.reqs.length === 0, JSON.stringify(r.reqs));
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

@@ -38,6 +38,8 @@ Example request body:
 - File paths (never transmitted)
 - Directory names or project names
 - Your prompt text or any other content
+- **Your email address** — see [Hear when your name wins](#hear-when-your-name-wins). The plugin
+  has no way to send it, by design: it prints a code and you type the address on the website
 - IP address (hashed daily with a salt, never stored raw)
 - Machine hostname, username, or any system properties
 - Any field the server doesn't recognize is rejected with `400`
@@ -117,6 +119,32 @@ When a name is held, the hook prints a notice and you can run:
 ```
 
 This command shows you each held name with its unknown tokens highlighted, so you can decide whether to submit, discard, or discard all. A name with an unknown token is never sent without your explicit approval; see the vocabulary gate above for the one case where a held name is released on its own.
+
+## Hear when your name wins
+
+Optional. Off unless you ask for it.
+
+```
+/plannames --claim
+```
+
+The plugin asks plannames.dev for a short code and prints it. Enter that code at
+[plannames.dev/claim](https://plannames.dev/claim) along with your email, confirm from your
+inbox, and you get an email when a name this install generated reaches the top ten.
+
+**The plugin never transmits your email address.** Asking for a code sends one field — the
+same anonymous `installId` that already goes out with every name — so claiming adds nothing to
+what leaves your machine. The address is typed on the website, on a page that states what is
+kept and why.
+
+What the server stores if you claim:
+
+- Your email address
+- The hash of your `installId`, so it knows which names are yours
+- Nothing else, and no other mail
+
+Every email carries a one-click unsubscribe (RFC 8058). Unsubscribing **deletes** the record
+rather than flagging it, and an address that is never confirmed is deleted within seven days.
 
 ## How to uninstall
 

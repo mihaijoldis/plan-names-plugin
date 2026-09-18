@@ -1,10 +1,19 @@
 ---
-description: Review plan filenames plan-names held back because they may contain your own prompt text, and choose which to submit or discard.
+description: Review plan filenames plan-names held back because they may contain your own prompt text, and choose which to submit or discard. Also `--claim` to get notified when one of your names reaches the top ten.
 ---
 
 # /plannames
 
 Review plan names held back by the vocabulary gate.
+
+## If the user asked to claim their names
+
+If the user's message asks about claiming, subscribing, or being notified about their names
+(or they typed `/plannames --claim`), run
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/review.mjs" --claim` and show its output verbatim. It
+prints a short code and the URL to enter it at. Do not ask for their email address and do not
+offer to submit it anywhere — the address is typed on the website, never through the plugin.
+Then stop; the rest of this document does not apply.
 
 ## What to do
 

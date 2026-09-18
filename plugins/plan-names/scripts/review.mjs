@@ -152,12 +152,50 @@ async function handleDiscardAll() {
   console.log(`Discarded all ${pending.length} pending names`);
 }
 
+// Asks the server for a short code and prints it. Deliberately the whole of the client's part
+// in email capture: the address is typed on the website, on a page that states what is kept
+// and why. The plugin sends the same installId it already sends with every name, so nothing
+// leaves this machine that was not leaving it already.
+async function handleClaim() {
+  const installId = getOrCreateInstallId();
+
+  let res;
+  try {
+    res = await fetch(`${baseUrl}/v1/claim-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ installId }),
+      signal: AbortSignal.timeout(NETWORK_TIMEOUT)
+    });
+  } catch (err) {
+    throw new Error(`Could not reach plannames.dev: ${err.message}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(`plannames.dev returned ${res.status}`);
+  }
+
+  const data = await res.json();
+  const minutes = Math.max(1, Math.round((data.expiresAt - Date.now()) / 60000));
+
+  console.log('');
+  console.log(`  Your claim code:  ${data.code}`);
+  console.log('');
+  console.log(`  Enter it at ${data.claimUrl || `${baseUrl}/claim`} with your email.`);
+  console.log(`  It expires in ${minutes} minutes and can be used once.`);
+  console.log('');
+  console.log('  You will get one email when a name from this install reaches the top ten.');
+  console.log('  Nothing else, and one click to leave.');
+  console.log('');
+}
+
 async function main() {
   try {
     const args = process.argv.slice(2);
+    const COMMANDS = ['--list', '--submit', '--discard', '--discard-all', '--claim'];
 
-    if (args.length === 0 || (args[0] !== '--list' && args[0] !== '--submit' && args[0] !== '--discard' && args[0] !== '--discard-all')) {
-      throw new Error('Usage: review.mjs --list | --submit <name> | --discard <name> | --discard-all');
+    if (args.length === 0 || !COMMANDS.includes(args[0])) {
+      throw new Error('Usage: review.mjs --list | --submit <name> | --discard <name> | --discard-all | --claim');
     }
 
     const command = args[0];
@@ -172,6 +210,8 @@ async function main() {
       await handleDiscard(args[1]);
     } else if (command === '--discard-all') {
       await handleDiscardAll();
+    } else if (command === '--claim') {
+      await handleClaim();
     }
   } catch (err) {
     console.error(`Error: ${err.message}`);

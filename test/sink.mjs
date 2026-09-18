@@ -26,6 +26,12 @@ createServer((req, res) => {
       res.end(JSON.stringify({ version: 'testvocab', updatedAt: '2026-09-17', tokens: [...VOCAB, ...extra] }));
     } else if (req.url === '/v1/ingest') {
       res.end(JSON.stringify({ status: 'published', notice: null }));
+    } else if (req.url === '/v1/claim-code') {
+      res.end(JSON.stringify({
+        code: 'K7M2-QX41',
+        expiresAt: Date.now() + 15 * 60 * 1000,
+        claimUrl: 'https://plannames.dev/claim'
+      }));
     } else if (req.url === '/v1/health') {
       // Tests toggle this file to simulate the endpoint not being deployed yet.
       if (existsSync(join(fileURLToPath(new URL('.', import.meta.url)), 'health-fail'))) {
